@@ -1,32 +1,39 @@
-CFLAGS=-Iinclude
-LDFLAGS=-Llib -lmath
-OBJ=obj/math.o obj/private/private_math.o
-LIB=lib/libmath.a lib/libmath.so
-TEST=test/test.out
+all: static shared test
+test: test/static test/shared
 
-all: lib test
+### STATIC ###
 
-lib: $(LIB)
+static: lib/static/libmath.a
 
-lib/libmath.a: $(OBJ)
+lib/static/libmath.a: obj/static/math.o obj/static/private/private_math.o
 	ar -qv $@ $^
 
-lib/libmath.so: $(OBJ)
+obj/static/%.o: src/%.c
+	gcc -c $< -o $@ -Iinclude
+
+test/static: test/static/test.out
+
+test/static/%.out: test/%.c lib/static/libmath.a
+	gcc -static -o $@ $< -Iinclude -Llib/static -lmath
+	$@
+
+### SHARED ###
+
+shared: lib/shared/libmath.so
+
+lib/shared/libmath.so: obj/shared/math.o obj/shared/private/private_math.o
 	gcc -shared -o $@ $^
 
-obj/%.o: src/%.c
-	gcc -fpic -c $< -o $@ $(CFLAGS)
+obj/shared/%.o: src/%.c
+	gcc -fpic -c $< -o $@ -Iinclude
 
-test: $(TEST)
+test/shared: test/shared/test.out
 
-test/%.out: test/%.c lib/libmath.a lib/libmath.so
-	gcc -o $@ $< $(CFLAGS) $(LDFLAGS)
-#	gcc -o $@ $< $(CFLAGS) $(LDFLAGS)
-
-check:lib/libmath.a
-	ar -t $^
-	nm $^
-	otool -L lib/libmath.so
-
+test/shared/%.out: test/%.c lib/shared/libmath.so
+	gcc -o $@ $< -Iinclude -Llib/shared -lmath
+	LD_LIBRARY_PATH=lib/shared $@
 clean:
-	rm $(OBJ) $(LIB) $(TEST)
+	find . -type f -name '*.o' -delete
+	find . -type f -name '*.a' -delete
+	find . -type f -name '*.so' -delete
+	find . -type f -name '*.out' -delete
