@@ -1,0 +1,13 @@
+CFLAGS=-Iinclude
+
+all: static_lib
+
+static_lib: lib/libmath.a
+
+lib/libmath.a:obj/math.o obj/private/math.o
+
+obj/%.o: src/%.c
+	gcc -c $< -o $@ $(CFLAGS)
+
+clean:
+	rm obj/math.o obj/private_math.o
